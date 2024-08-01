@@ -102,6 +102,37 @@ app.post('/movies', (req, res) => {
   });
 });
 
+
+// Delete movie endpoint
+app.delete('/movies/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM movies WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Error deleting movie:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send('Movie deleted successfully');
+  });
+});
+
+// Update movie endpoint
+app.put('/movies/:id', (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+
+  db.query('UPDATE movies SET title = ? WHERE id = ?', [title, id], (err, results) => {
+    if (err) {
+      console.error('Error updating movie:', err);
+      return res.status(500).send('Server error');
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).send('Movie not found');
+    }
+    res.status(200).send('Movie updated successfully');
+  });
+});
+
+
 // Endpoints for Series
 app.get('/series', (req, res) => {
   db.query('SELECT * FROM series ORDER BY title ASC', (err, results) => {
@@ -121,6 +152,35 @@ app.post('/series', (req, res) => {
       return res.status(500).send('Server error');
     }
     res.status(201).send({ id: results.insertId, title });
+  });
+});
+
+// Delete series endpoint
+app.delete('/series/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM series WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Error deleting series:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send('Series deleted successfully');
+  });
+});
+
+// Update series endpoint
+app.put('/series/:id', (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+
+  db.query('UPDATE series SET title = ? WHERE id = ?', [title, id], (err, results) => {
+    if (err) {
+      console.error('Error updating series:', err);
+      return res.status(500).send('Server error');
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).send('Series not found');
+    }
+    res.status(200).send('Series updated successfully');
   });
 });
 
@@ -146,6 +206,36 @@ app.post('/games', (req, res) => {
   });
 });
 
+
+// Delete game endpoint
+app.delete('/games/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM games WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Error deleting game:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send('Game deleted successfully');
+  });
+});
+
+// Update game endpoint
+app.put('/games/:id', (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+
+  db.query('UPDATE games SET title = ? WHERE id = ?', [title, id], (err, results) => {
+    if (err) {
+      console.error('Error updating game:', err);
+      return res.status(500).send('Server error');
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).send('Game not found');
+    }
+    res.status(200).send('Game updated successfully');
+  });
+});
+
 // Endpoints for Animes
 app.get('/animes', (req, res) => {
   db.query('SELECT * FROM animes ORDER BY title ASC', (err, results) => {
@@ -165,6 +255,19 @@ app.post('/animes', (req, res) => {
       return res.status(500).send('Server error');
     }
     res.status(201).send({ id: results.insertId, title });
+  });
+});
+
+
+// Delete anime endpoint
+app.delete('/animes/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM animes WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Error deleting anime:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send('Anime deleted successfully');
   });
 });
 
