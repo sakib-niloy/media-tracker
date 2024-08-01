@@ -8,11 +8,9 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const port = 3000;
 
-// Middleware setup
 app.use(cors());
 app.use(express.json());
 
-// Database connection
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -21,56 +19,31 @@ const db = mysql.createConnection({
 });
 
 db.connect((err) => {
-  if (err) {
-    console.error('Database connection error:', err);
-    process.exit(1);
-  }
+  if (err) throw err;
   console.log('Connected to database');
 });
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
+  const { username, email, password } = req.body;
 
-    try {
-        // Check if the email already exists
-        const [results] = await new Promise((resolve, reject) => {
-            db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
-                if (err) {
-                    console.error('Database query error:', err);
-                    return reject(err);
-                }
-                resolve(results);
-            });
-        });
+  try {
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-        console.log('Registration query results:', results); // Debugging line
-
-        if (results.length > 0) {
-            return res.status(400).send('Email already registered');
-        }
-
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Insert new user into database
-        await new Promise((resolve, reject) => {
-            db.query('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword], (err, results) => {
-                if (err) {
-                    console.error('Database insert error:', err);
-                    return reject(err);
-                }
-                resolve(results);
-            });
-        });
-
-        res.status(201).send('User registered successfully');
-    } catch (error) {
-        console.error('Error registering user:', error);
-        res.status(500).send('Registration failed, please try again');
-    }
+    // Insert user into the database
+    db.query('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword], (err, results) => {
+      if (err) {
+        console.error('Database insert error:', err);
+        return res.status(500).send('Registration failed');
+      }
+      res.status(201).send('User registered successfully');
+    });
+  } catch (error) {
+    console.error('Error during registration:', error);
+    res.status(500).send('Registration failed');
+  }
 });
-
 
 // Login endpoint
 app.post('/login', async (req, res) => {
@@ -78,31 +51,29 @@ app.post('/login', async (req, res) => {
 
   try {
     // Fetch user from database
-    const [results] = await new Promise((resolve, reject) => {
-      db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
-        if (err) return reject(err);
-        resolve(results);
-      });
+    db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
+      if (err) {
+        console.error('Database query error:', err);
+        return res.status(500).send('Server error');
+      }
+
+      if (results.length === 0) {
+        return res.status(401).send('Invalid email or password');
+      }
+
+      const user = results[0];
+
+      // Compare password
+      const match = await bcrypt.compare(password, user.password);
+      if (!match) {
+        return res.status(401).send('Invalid email or password');
+      }
+
+      // Create JWT token
+      const token = jwt.sign({ id: user.id, email: user.email }, 'your_jwt_secret', { expiresIn: '1h' });
+
+      res.status(200).json({ token });
     });
-
-    console.log('Login query results:', results); // Debugging line
-
-    if (results.length === 0) {
-      return res.status(401).send('Invalid email or password');
-    }
-
-    const user = results[0];
-
-    // Compare password
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.status(401).send('Invalid email or password');
-    }
-
-    // Create JWT token
-    const token = jwt.sign({ id: user.id, email: user.email }, 'your_jwt_secret', { expiresIn: '1h' });
-
-    res.status(200).json({ token });
   } catch (error) {
     console.error('Error logging in user:', error);
     res.status(500).send('Server error');
